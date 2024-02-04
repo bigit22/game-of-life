@@ -1,95 +1,121 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ncurses.h>
-#include <unistd.h>
-#define BOARD_HEIGHT 25
-#define BOARD_WIDTH 80
 
-void input(int Field[BOARD_HEIGHT][BOARD_WIDTH]);
-void doo(int Field[BOARD_HEIGHT][BOARD_WIDTH],int FieldSave[BOARD_HEIGHT][BOARD_WIDTH]);
-int ReturnNeighboors(int Field[BOARD_HEIGHT][BOARD_WIDTH], int X, int Y);
+#define HEIGHT 25
+#define WIDTH 80
+
+void input(int arr[HEIGHT][WIDTH]);
+void draw(int arr[HEIGHT][WIDTH]);
+void calculate_next(int current[HEIGHT][WIDTH], int next_field[HEIGHT][WIDTH]);
+void init_field(int current_field[HEIGHT][WIDTH]);
+void place_alive(int current_field[HEIGHT][WIDTH], int y, int x);
+void copy(int current_field[HEIGHT][WIDTH], int next_field[HEIGHT][WIDTH]);
 
 int main() {
-    int FieldSave[BOARD_HEIGHT][BOARD_WIDTH];
-    int Field[BOARD_HEIGHT][BOARD_WIDTH];
-    input(Field);
-    doo(Field, FieldSave);
+    int current[HEIGHT][WIDTH];
+    int next_field[HEIGHT][WIDTH];
+    int population = 1;
+
+    init_field(current);
+    init_field(next_field);
+
+    input(current);
+
+    while (1) {
+        draw(current);
+        calculate_next(current, next_field);
+        copy(next_field, current);
+        init_field(next_field);
+        printf("Population: %d", population);
+        population++;
+        usleep(100000);
+        system("cls");
+    }
     return 0;
 }
 
-void input(int Field[BOARD_HEIGHT][BOARD_WIDTH]){
-    for(int i = 0; i < BOARD_HEIGHT; i++){
-        for(int j = 0; j < BOARD_WIDTH; j++){
-            scanf("%d", &Field[i][j]);
+void input(int arr[HEIGHT][WIDTH]){
+    for(int i = 0; i < HEIGHT; i++){
+        for(int j = 0; j < WIDTH; j++){
+            scanf("%d", &arr[i][j]);
         }
     }
 }
 
-void doo(int Field[BOARD_HEIGHT][BOARD_WIDTH],int  FieldSave[BOARD_HEIGHT][BOARD_WIDTH]){ 
-    while(1) {
-        for (int y = 0; y < BOARD_HEIGHT; y++) {
-            for (int x = 0; x < BOARD_WIDTH; x++) {
-                if (Field[y][x] == 1){
-                    printf("X");
-                }
-                else{
-                    printf("-");
-                }
-            }
-            printf("\n");
-        }
-        usleep(100000);
-        system("clear");
-        for (int y = 0; y < BOARD_HEIGHT; y++) {
-            for (int x = 0; x < BOARD_WIDTH; x++) {
-                FieldSave[y][x] = Field[y][x];
-                if (Field[y][x] == 1) {
-                    if (ReturnNeighboors(Field, x, y) == 2) FieldSave[y][x] = 1;
-                    else if (ReturnNeighboors(Field, x, y) == 3) FieldSave[y][x] = 1;
-                    else if (ReturnNeighboors(Field, x, y) > 3) FieldSave[y][x] = 0;
-                    else if (ReturnNeighboors(Field, x, y) < 2) FieldSave[y][x] = 0;
-                } else {
-                    if (ReturnNeighboors(Field, x, y) == 3) FieldSave[y][x] = 1;
-                }
-            }
-        }
-        for (int y = 0; y < BOARD_HEIGHT; y++) {
-            for (int x = 0; x < BOARD_WIDTH; x++) {
-                Field[y][x] = FieldSave[y][x];
-            }
+void init_field(int current_field[HEIGHT][WIDTH])
+{
+	for (int y = 0; y < HEIGHT; y++)
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            current_field[y][x] = 0;
         }
     }
 }
 
-int ReturnNeighboors(int Field[BOARD_HEIGHT][BOARD_WIDTH], int X, int Y) {
-    int N = 0;
-    if(Y + 1 == BOARD_HEIGHT && X + 1 == BOARD_WIDTH){
-        N = Field[0][X - 1] + Field[0][X] + Field[0][0] + Field[Y][X - 1] + Field[Y][0] +
-        Field[Y - 1][X - 1] + Field[Y - 1][X] + Field[Y - 1][0];
+void place_alive(int current_field[HEIGHT][WIDTH], int y, int x)
+{
+    current_field[y][x] = 1;
+}
+
+void copy(int current_field[HEIGHT][WIDTH], int next_field[HEIGHT][WIDTH])
+{
+    for (int y = 0; y < HEIGHT; y++)
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            next_field[y][x] = current_field[y][x];
+        }
     }
-    else if(Y + 1 == BOARD_HEIGHT && X + 1 < BOARD_WIDTH){
-        N = Field[0][X - 1] + Field[0][X] + Field[0][X + 1] + Field[Y][X - 1] + Field[Y][X + 1] +
-        Field[Y - 1][X - 1] + Field[Y - 1][X] + Field[Y - 1][X + 1];
-    }
-    else if(Y + 1 < BOARD_HEIGHT && X + 1 == BOARD_WIDTH){
-       N = Field[Y + 1][X - 1] + Field[Y + 1][X] + Field[Y + 1][0] + Field[Y][X - 1] + Field[Y][0] +
-        Field[Y - 1][X - 1] + Field[Y - 1][X] + Field[Y - 1][0];
-    }
-    else if(Y - 1 < 0 && X - 1 < 0){
-        N = Field[Y + 1][BOARD_WIDTH] + Field[Y + 1][X] + Field[Y + 1][X + 1] + Field[Y][BOARD_WIDTH] + Field[Y][X + 1] + 
-        Field[BOARD_HEIGHT][BOARD_WIDTH] + Field[BOARD_HEIGHT][X] + Field[BOARD_HEIGHT][X + 1];
-    }
-    else if(Y - 1 > 0 && X - 1 == 0){
-        N = Field[Y + 1][BOARD_WIDTH] + Field[Y + 1][X] + Field[Y + 1][X + 1] + Field[Y][BOARD_WIDTH] + Field[Y][X + 1] + 
-        Field[Y - 1][BOARD_WIDTH] + Field[Y - 1][X] + Field[Y - 1][X + 1];
-    }
-    else if(Y - 1 == 0 && X - 1 > 0){
-        N = Field[Y + 1][X - 1] + Field[Y + 1][X] + Field[Y + 1][X + 1] + Field[Y][X - 1] + Field[Y][X + 1] + 
-        Field[BOARD_HEIGHT][X - 1] + Field[BOARD_HEIGHT][X] + Field[BOARD_HEIGHT][X + 1];
-    }
-    else{
-        N = Field[Y + 1][X - 1] + Field[Y + 1][X] + Field[Y + 1][X + 1] + Field[Y][X - 1] + Field[Y][X + 1] + 
-        Field[Y - 1][X - 1] + Field[Y - 1][X] + Field[Y - 1][X + 1];
-    }
-    return N;
+}
+
+int count_alive_neigbours(int current_field[HEIGHT][WIDTH], int y, int x)
+{
+    return
+        current_field[(HEIGHT + y - 1) % HEIGHT][(WIDTH + x) % WIDTH] +
+        current_field[(HEIGHT + y - 1) % HEIGHT][(WIDTH + x + 1) % WIDTH] +
+        current_field[(HEIGHT + y) % HEIGHT][(WIDTH + x + 1) % WIDTH] +
+        current_field[(HEIGHT + y + 1) % HEIGHT][(WIDTH + x + 1) % WIDTH] +
+        current_field[(HEIGHT + y + 1) % HEIGHT][(WIDTH + x) % WIDTH] +
+        current_field[(HEIGHT + y + 1) % HEIGHT][(WIDTH + x - 1) % WIDTH] +
+        current_field[(HEIGHT + y) % HEIGHT][(WIDTH + x - 1) % WIDTH] +
+        current_field[(HEIGHT + y - 1) % HEIGHT][(WIDTH + x - 1) % WIDTH];
+}
+
+void calculate_next(int current[HEIGHT][WIDTH], int next_field[HEIGHT][WIDTH])
+{
+    for (int y = 0; y < HEIGHT; y++)
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            int aliveCount = count_alive_neigbours(current, y, x);
+            // current is ALIVE && have 2 or 3 alive neighbours is alive -> keep it ALIVE
+            // else -> make it DEAD
+            if (current[y][x] == 1 && aliveCount != 2 && aliveCount != 3)
+            {
+                next_field[y][x] = 0;
+            }
+            // current is DEAD && more than 3 neigbours is alive -> make it ALIVE
+            else if (current[y][x] == 0 && aliveCount == 3)
+            {
+                next_field[y][x] = 1;
+            }
+            else
+            {
+				next_field[y][x] = current[y][x];
+			}
+		}
+	}
+}
+
+void draw(int arr[HEIGHT][WIDTH]) {
+	for (int i = 0; i < HEIGHT; i++) {
+		for (int j = 0; j < WIDTH; j++) {
+			if (arr[i][j] == 1)
+				printf("*");
+			else
+				printf(" ");
+		}
+		printf("\n");
+	}
 }
